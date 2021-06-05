@@ -209,7 +209,7 @@ const sampler = new Tone.Sampler({
     "C7": "C7.mp3",
   },
   release: 1,
-  baseUrl: "/samples/piano/",
+  baseUrl: "/Vue3-Piano/samples/piano/",
 }).toDestination();
 //采样器加载完成后演奏乐谱
 Tone.loaded().then(() => {
