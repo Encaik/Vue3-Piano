@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --base=/encaik-piano/",
+    "build": "vite build --base=/Vue3-Piano/",
     "serve": "vite preview"
   },
   "dependencies": {
