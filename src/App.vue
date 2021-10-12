@@ -1,7 +1,7 @@
 <template>
   <div id="App">
     <div class="container">
-      <div class="title">ENCAIK POINA</div>
+      <div class="title">ENCAIK PIANO</div>
       <div class="setting">
         <div class="setting-btn-group">
           <div
@@ -47,6 +47,18 @@
           v-model="musicStr"
         >
         </textarea>
+      </div>
+      <div class="setting">
+        <div class="setting-btn-group">
+          <div
+            class="setting-btn"
+            @click="resetInputArea()"
+          >重置</div>
+          <div
+            class="setting-btn"
+            @click="playInputArea()"
+          >播放</div>
+        </div>
       </div>
     </div>
   </div>
@@ -209,7 +221,7 @@ const sampler = new Tone.Sampler({
     "C7": "C7.mp3",
   },
   release: 1,
-  baseUrl: "/Vue3-Piano/samples/piano/",
+  baseUrl: "/samples/piano/",
 }).toDestination();
 //采样器加载完成后演奏乐谱
 Tone.loaded().then(() => {
@@ -223,6 +235,14 @@ function playKey(pitchName) {
   setTimeout(() => {
     $el.classList.remove("key-active");
   }, 100)
+}
+
+function resetInputArea() {
+  musicStr.value = "C4-D4-E4-G4G4-R-E4-G4-E4-A4-G4-E4-G4.R-E4=G4=A4-A4-A4-A4-A4-G4-F4=G4=G4._E4B4-C5C5-C5-E4-R-E4-B4-B4C5-B4-G4.R-C4=G4=A4-A4-A4-A4-A4-G4-F4=G4=G4._";
+}
+
+function playInputArea() {
+  this.playMusic();
 }
 
 /* 设置 */
