@@ -13,8 +13,10 @@
           :class="key.keyType ? 'black-key' : 'white-key'"
           v-for="key in keyboard.slice(0, keyboard.length / 2)"
           :key="key.pitchName"
-          @mousedown="playKey(key.pitchName)"
           :id="key.pitchName"
+          @mousedown="
+            onNotePlay({ pitch: key.pitchName, playTime: 0.25 }, NotePlayType.mouse)
+          "
         >
           {{ nameType ? key.pitchName : key.keyName }}
         </div>
@@ -24,8 +26,10 @@
           :class="key.keyType ? 'black-key' : 'white-key'"
           v-for="key in keyboard.slice(keyboard.length / 2)"
           :key="key.pitchName"
-          @mousedown="playKey(key.pitchName)"
           :id="key.pitchName"
+          @mousedown="
+            onNotePlay({ pitch: key.pitchName, playTime: 0.25 }, NotePlayType.mouse)
+          "
         >
           {{ nameType ? key.pitchName : key.keyName }}
         </div>
@@ -40,12 +44,12 @@
         <span>.（英文句号）附点音符</span>
       </div>
       <div class="music-input">
-        <el-input v-model="musicStr" :rows="4" type="textarea" placeholder="请输入乐谱" />
+        <el-input v-model="txtMusic" :rows="4" type="textarea" placeholder="请输入乐谱" />
       </div>
       <div class="setting">
         <div class="setting-btn-group">
-          <el-button type="primary" @click="resetInputArea(0)">重置</el-button>
-          <el-button type="primary" @click="playInputArea(1)">播放</el-button>
+          <el-button type="primary" @click="onResetBtnClick()">重置</el-button>
+          <el-button type="primary" @click="onPlayBtnClick()">播放</el-button>
         </div>
       </div>
     </div>
@@ -57,6 +61,7 @@ import { ref } from "vue";
 import * as Tone from "tone";
 import { ElMessage } from "element-plus";
 
+let sampler; // 采样器对象
 //键盘渲染对象
 let keyboard = [
   { keyName: "", pitchName: "A0", keyType: 0, keyMap: "" },
@@ -148,6 +153,7 @@ let keyboard = [
   { keyName: "", pitchName: "B7", keyType: 0, keyMap: "" },
   { keyName: "", pitchName: "C8", keyType: 0, keyMap: "" },
 ];
+
 //歌谱字符串
 /**
  * -八分音符
@@ -155,15 +161,188 @@ let keyboard = [
  * -四份音符
  * .附点音符
  */
+let txtMusic = ref("");
+const defaultTxtMusic =
+  "C4-D4-E4-G4G4-R-E4-G4-E4-A4-G4-E4-G4.R-E4=G4=A4-A4-A4-A4-A4-G4-F4=G4=G4._E4B4-C5C5-C5-E4-R-E4-B4-B4C5-B4-G4.R-C4=G4=A4-A4-A4-A4-A4-G4-F4=G4=G4._";
 
-let musicStr = ref(
-  "C4-D4-E4-G4G4-R-E4-G4-E4-A4-G4-E4-G4.R-E4=G4=A4-A4-A4-A4-A4-G4-F4=G4=G4._E4B4-C5C5-C5-E4-R-E4-B4-B4C5-B4-G4.R-C4=G4=A4-A4-A4-A4-A4-G4-F4=G4=G4._"
-);
-function playMusic() {
-  let noteDuration = 0.5;
-  let music = []; //乐谱演奏对象
-  let musicArr = musicStr.value.match(/[a-zA-Z]+[0-9]?(-|=)?\.?/g) || [];
-  for (let item of musicArr) {
+let noteDuration = ""; // 单个音符时长
+
+const NotePlayType = {
+  auto: 1,
+  mouse: 2,
+  keyboard: 3,
+};
+
+init();
+
+/**
+ * 初始化
+ */
+function init() {
+  txtMusic.value = defaultTxtMusic;
+  noteDuration = 0.5;
+  sampler = sampleInit();
+  onMouseListener();
+}
+
+/**
+ * 采样器初始化
+ */
+function sampleInit() {
+  const sampler = new Tone.Sampler({
+    urls: {
+      A0: "A0.mp3",
+      C1: "C1.mp3",
+      A1: "A1.mp3",
+      C2: "C2.mp3",
+      A2: "A2.mp3",
+      C3: "C3.mp3",
+      A3: "A3.mp3",
+      C4: "C4.mp3",
+      C5: "C5.mp3",
+      A5: "A5.mp3",
+      C6: "C6.mp3",
+      A6: "A6.mp3",
+      C7: "C7.mp3",
+    },
+    release: 1,
+    baseUrl: "./samples/piano/",
+  }).toDestination();
+  //采样器加载完成后演奏乐谱
+  Tone.loaded().then(() => {
+    ElMessage({
+      message: "资源加载完成",
+      type: "success",
+    });
+  });
+  return sampler;
+}
+
+/**
+ * 播放曲谱
+ */
+function onPlayBtnClick() {
+  onTxtMusicPlay();
+}
+
+/**
+ * 重置文本曲谱
+ */
+function onResetBtnClick() {
+  txtMusic.value = defaultTxtMusic;
+}
+
+/**
+ * 单音演奏
+ */
+function onNotePlay(note, notePlayType) {
+  switch (notePlayType) {
+    case NotePlayType.auto:
+      onNotePlayByAuto(note);
+      break;
+    case NotePlayType.mouse:
+      onNotePlayByMouse(note);
+      break;
+    case NotePlayType.keyboard:
+      onNotePlayByKeyboard(note);
+      break;
+  }
+}
+
+/**
+ * 自动触发单音演奏
+ */
+function onNotePlayByAuto(note) {
+  sampler.triggerAttackRelease(
+    note.pitch,
+    `${(note.playTime / 0.25) * 2}n`,
+    note.contextTime
+  );
+  let $el = document.getElementById(note.pitch);
+  setTimeout(() => {
+    $el.classList.add("key-active");
+    setTimeout(() => {
+      $el.classList.remove("key-active");
+    }, 100);
+  }, note.realTime * 1000);
+}
+
+/**
+ * 鼠标触发单音演奏
+ */
+function onNotePlayByMouse(note) {
+  sampler.triggerAttackRelease(
+    note.pitch,
+    `${(note.playTime / 0.25) * 2}n`
+  );
+  let $el = document.getElementById(note.pitch);
+  $el.classList.add("key-active");
+  $el.addEventListener("mouseup", removeKeyActiveClass);
+  $el.addEventListener("mouseleave", removeKeyActiveClass);
+  function removeKeyActiveClass() {
+    $el.classList.remove("key-active");
+    $el.removeEventListener("mouseup", removeKeyActiveClass);
+    $el.removeEventListener("mouseleave", removeKeyActiveClass);
+  }
+}
+
+/**
+ * 键盘触发单音演奏
+ */
+function onNotePlayByKeyboard() {}
+
+/**
+ * 鼠标滑动演奏监听
+ */
+function onMouseListener() {
+  let isMouseDown = false;
+  document.addEventListener("mousedown", (e) => {
+    isMouseDown = true;
+  });
+  document.addEventListener("mouseup", () => {
+    isMouseDown = false;
+  });
+  document.addEventListener("mouseover", (e) => {
+    if (isMouseDown && ["white-key", "black-key"].includes(e.target.className)) {
+      try {
+        onNotePlay({ pitch: e.target.innerText, playTime: 0.25 }, NotePlayType.mouse);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  });
+}
+
+/**
+ * 文本乐谱演奏
+ */
+function onTxtMusicPlay() {
+  let noteList = buildNoteListByTxtMusic(txtMusic); // 音符列表
+  let contextTime = Tone.immediate(); // 音符演奏时机（上下文）
+  let realTime = 0; // 音符实际时间
+  noteList.forEach((note) => {
+    if (note.pitch !== "R") {
+      onNotePlay(
+        {
+          ...note,
+          contextTime,
+          realTime,
+        },
+        NotePlayType.auto
+      );
+    }
+    contextTime += note.playTime;
+    realTime += note.playTime;
+  });
+}
+
+/**
+ * 文本乐谱生成单音列表
+ */
+function buildNoteListByTxtMusic(txtMusic) {
+  let nodeList = [];
+  let txtNodeList = txtMusic.value.match(/[a-zA-Z]+[0-9]?(-|=)?\.?/g) || [];
+  for (let item of txtNodeList) {
     let playTime = 0;
     let timeArr = item.match(/(-|=|\.)/g) || [];
     if (timeArr.includes("-")) {
@@ -178,48 +357,13 @@ function playMusic() {
     if (timeArr.includes(".")) {
       playTime += playTime / 2;
     }
-    music.push({
+    nodeList.push({
       pitch: item.match(/[a-zA-Z]+[0-9]?/)[0],
       playTime,
     });
   }
-  let now = Tone.immediate();
-  let time = 0;
-  music.forEach((i) => {
-    if (i.pitch !== "R") {
-      playKey(i.pitch, (i.playTime / 0.25) * 2, now, time, true);
-    }
-    now += i.playTime;
-    time += i.playTime;
-  });
+  return nodeList;
 }
-//采样器加载
-const sampler = new Tone.Sampler({
-  urls: {
-    A0: "A0.mp3",
-    C1: "C1.mp3",
-    A1: "A1.mp3",
-    C2: "C2.mp3",
-    A2: "A2.mp3",
-    C3: "C3.mp3",
-    A3: "A3.mp3",
-    C4: "C4.mp3",
-    C5: "C5.mp3",
-    A5: "A5.mp3",
-    C6: "C6.mp3",
-    A6: "A6.mp3",
-    C7: "C7.mp3",
-  },
-  release: 1,
-  baseUrl: "./samples/piano/",
-}).toDestination();
-//采样器加载完成后演奏乐谱
-Tone.loaded().then(() => {
-  ElMessage({
-    message: "资源加载完成",
-    type: "success",
-  });
-});
 
 //单音演奏方法
 function playKey(
@@ -242,26 +386,8 @@ function playKey(
   } else {
     if (isKeyboard) {
       $el.classList.add("key-active");
-    } else {
-      $el.classList.add("key-active");
-      $el.addEventListener("mouseup", removeKeyActiveClass);
-      $el.addEventListener("mouseleave", removeKeyActiveClass);
-      function removeKeyActiveClass() {
-        $el.classList.remove("key-active");
-        $el.removeEventListener("mouseup", removeKeyActiveClass);
-        $el.removeEventListener("mouseleave", removeKeyActiveClass);
-      }
     }
   }
-}
-
-function resetInputArea() {
-  musicStr.value =
-    "C4-D4-E4-G4G4-R-E4-G4-E4-A4-G4-E4-G4.R-E4=G4=A4-A4-A4-A4-A4-G4-F4=G4=G4._E4B4-C5C5-C5-E4-R-E4-B4-B4C5-B4-G4.R-C4=G4=A4-A4-A4-A4-A4-G4-F4=G4=G4._";
-}
-
-function playInputArea() {
-  playMusic();
 }
 
 /* 设置 */
@@ -285,20 +411,6 @@ document.addEventListener("keyup", (event) => {
   pressKeys.delete(event.code);
   let key = keyboard.filter((i) => i.keyMap === event.code)?.[0];
   key ? document.getElementById(key.pitchName).classList.remove("key-active") : null;
-});
-
-/* 鼠标演奏逻辑 */
-let isPlay = false;
-document.addEventListener("mousedown", () => {
-  isPlay = true;
-});
-document.addEventListener("mouseover", (event) => {
-  if (isPlay && ["white-key", "black-key"].includes(event.target.className)) {
-    playKey(event.target.innerHTML);
-  }
-});
-document.addEventListener("mouseup", () => {
-  isPlay = false;
 });
 </script>
 
