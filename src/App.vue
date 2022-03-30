@@ -4,34 +4,33 @@
       <div class="title">ENCAIK PIANO</div>
       <div class="setting">
         <div class="setting-btn-group">
-          <div
-            class="setting-btn"
-            @click="onNameTypeSet(0)"
-          >键名</div>
-          <div
-            class="setting-btn"
-            @click="onNameTypeSet(1)"
-          >音名</div>
+          <el-button type="primary" @click="onNameTypeSet(0)">键名</el-button>
+          <el-button type="primary" @click="onNameTypeSet(1)">音名</el-button>
         </div>
       </div>
       <div class="keyboard">
         <div
-          :class="key.keyType?'black-key':'white-key'"
-          v-for="key in keyboard.slice(0,keyboard.length/2)"
+          :class="key.keyType ? 'black-key' : 'white-key'"
+          v-for="key in keyboard.slice(0, keyboard.length / 2)"
           :key="key.pitchName"
-          @click="playKey(key.pitchName)"
+          @mousedown="playKey(key.pitchName)"
           :id="key.pitchName"
-        >{{nameType?key.pitchName:key.keyName}}</div>
+        >
+          {{ nameType ? key.pitchName : key.keyName }}
+        </div>
       </div>
       <div class="keyboard">
         <div
-          :class="key.keyType?'black-key':'white-key'"
-          v-for="key in keyboard.slice(keyboard.length/2)"
+          :class="key.keyType ? 'black-key' : 'white-key'"
+          v-for="key in keyboard.slice(keyboard.length / 2)"
           :key="key.pitchName"
-          @click="playKey(key.pitchName)"
+          @mousedown="playKey(key.pitchName)"
           :id="key.pitchName"
-        >{{nameType?key.pitchName:key.keyName}}</div>
+        >
+          {{ nameType ? key.pitchName : key.keyName }}
+        </div>
       </div>
+      <el-divider />
       <div class="text-input">
         <span>C4中央Do</span>
         <span>R四分休止符</span>
@@ -41,23 +40,12 @@
         <span>.（英文句号）附点音符</span>
       </div>
       <div class="music-input">
-        <textarea
-          rows="10"
-          cols="200"
-          v-model="musicStr"
-        >
-        </textarea>
+        <el-input v-model="musicStr" :rows="4" type="textarea" placeholder="请输入乐谱" />
       </div>
       <div class="setting">
         <div class="setting-btn-group">
-          <div
-            class="setting-btn"
-            @click="resetInputArea()"
-          >重置</div>
-          <div
-            class="setting-btn"
-            @click="playInputArea()"
-          >播放</div>
+          <el-button type="primary" @click="resetInputArea(0)">重置</el-button>
+          <el-button type="primary" @click="playInputArea(1)">播放</el-button>
         </div>
       </div>
     </div>
@@ -65,8 +53,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import * as Tone from 'tone';
+import { ref } from "vue";
+import * as Tone from "tone";
+import { ElMessage } from "element-plus";
+
 //键盘渲染对象
 let keyboard = [
   { keyName: "", pitchName: "A0", keyType: 0, keyMap: "" },
@@ -156,7 +146,7 @@ let keyboard = [
   { keyName: "", pitchName: "A7", keyType: 0, keyMap: "" },
   { keyName: "", pitchName: "Bb7", keyType: 1, keyMap: "" },
   { keyName: "", pitchName: "B7", keyType: 0, keyMap: "" },
-  { keyName: "", pitchName: "C8", keyType: 0, keyMap: "" }
+  { keyName: "", pitchName: "C8", keyType: 0, keyMap: "" },
 ];
 //歌谱字符串
 /**
@@ -166,83 +156,112 @@ let keyboard = [
  * .附点音符
  */
 
-
-let musicStr = ref("C4-D4-E4-G4G4-R-E4-G4-E4-A4-G4-E4-G4.R-E4=G4=A4-A4-A4-A4-A4-G4-F4=G4=G4._E4B4-C5C5-C5-E4-R-E4-B4-B4C5-B4-G4.R-C4=G4=A4-A4-A4-A4-A4-G4-F4=G4=G4._");
+let musicStr = ref(
+  "C4-D4-E4-G4G4-R-E4-G4-E4-A4-G4-E4-G4.R-E4=G4=A4-A4-A4-A4-A4-G4-F4=G4=G4._E4B4-C5C5-C5-E4-R-E4-B4-B4C5-B4-G4.R-C4=G4=A4-A4-A4-A4-A4-G4-F4=G4=G4._"
+);
 function playMusic() {
   let noteDuration = 0.5;
-  let music = [];//乐谱演奏对象
+  let music = []; //乐谱演奏对象
   let musicArr = musicStr.value.match(/[a-zA-Z]+[0-9]?(-|=)?\.?/g) || [];
   for (let item of musicArr) {
-    console.log(item)
     let playTime = 0;
     let timeArr = item.match(/(-|=|\.)/g) || [];
-    console.log(timeArr)
-    if (timeArr.includes('-')) {
-      playTime += noteDuration / 2
-    } else if (timeArr.includes('=')) {
-      playTime += noteDuration / 4
-    } else if (timeArr.includes('_')) {
-      playTime += noteDuration
+    if (timeArr.includes("-")) {
+      playTime += noteDuration / 2;
+    } else if (timeArr.includes("=")) {
+      playTime += noteDuration / 4;
+    } else if (timeArr.includes("_")) {
+      playTime += noteDuration;
     } else {
-      playTime += noteDuration
+      playTime += noteDuration;
     }
-    if (timeArr.includes('.')) {
-      playTime += playTime / 2
+    if (timeArr.includes(".")) {
+      playTime += playTime / 2;
     }
     music.push({
       pitch: item.match(/[a-zA-Z]+[0-9]?/)[0],
       playTime,
-    })
+    });
   }
-  let now = Tone.now();
-  music.forEach(i => {
-    console.log(i);
+  let now = Tone.immediate();
+  let time = 0;
+  music.forEach((i) => {
     if (i.pitch !== "R") {
-      sampler.triggerAttackRelease(i.pitch, "2n", now);
+      playKey(i.pitch, (i.playTime / 0.25) * 2, now, time, true);
     }
     now += i.playTime;
-  })
+    time += i.playTime;
+  });
 }
 //采样器加载
 const sampler = new Tone.Sampler({
   urls: {
-    "A0": "A0.mp3",
-    "C1": "C1.mp3",
-    "A1": "A1.mp3",
-    "C2": "C2.mp3",
-    "A2": "A2.mp3",
-    "C3": "C3.mp3",
-    "A3": "A3.mp3",
-    "C4": "C4.mp3",
-    "C5": "C5.mp3",
-    "A5": "A5.mp3",
-    "C6": "C6.mp3",
-    "A6": "A6.mp3",
-    "C7": "C7.mp3",
+    A0: "A0.mp3",
+    C1: "C1.mp3",
+    A1: "A1.mp3",
+    C2: "C2.mp3",
+    A2: "A2.mp3",
+    C3: "C3.mp3",
+    A3: "A3.mp3",
+    C4: "C4.mp3",
+    C5: "C5.mp3",
+    A5: "A5.mp3",
+    C6: "C6.mp3",
+    A6: "A6.mp3",
+    C7: "C7.mp3",
   },
   release: 1,
-  baseUrl: "/samples/piano/",
+  baseUrl: "./samples/piano/",
 }).toDestination();
 //采样器加载完成后演奏乐谱
 Tone.loaded().then(() => {
-  playMusic();
-})
+  ElMessage({
+    message: "资源加载完成",
+    type: "success",
+  });
+});
+
 //单音演奏方法
-function playKey(pitchName) {
-  sampler.triggerAttackRelease(pitchName, "8n");
-  let $el = document.getElementById(pitchName)
-  $el.classList.add("key-active");
-  setTimeout(() => {
-    $el.classList.remove("key-active");
-  }, 100)
+function playKey(
+  pitchName,
+  noteDuration = 8,
+  now,
+  time,
+  isAuto = false,
+  isKeyboard = false
+) {
+  sampler.triggerAttackRelease(pitchName, noteDuration + "n", now);
+  let $el = document.getElementById(pitchName);
+  if (isAuto) {
+    setTimeout(() => {
+      $el.classList.add("key-active");
+      setTimeout(() => {
+        $el.classList.remove("key-active");
+      }, 100);
+    }, time * 1000);
+  } else {
+    if (isKeyboard) {
+      $el.classList.add("key-active");
+    } else {
+      $el.classList.add("key-active");
+      $el.addEventListener("mouseup", removeKeyActiveClass);
+      $el.addEventListener("mouseleave", removeKeyActiveClass);
+      function removeKeyActiveClass() {
+        $el.classList.remove("key-active");
+        $el.removeEventListener("mouseup", removeKeyActiveClass);
+        $el.removeEventListener("mouseleave", removeKeyActiveClass);
+      }
+    }
+  }
 }
 
 function resetInputArea() {
-  musicStr.value = "C4-D4-E4-G4G4-R-E4-G4-E4-A4-G4-E4-G4.R-E4=G4=A4-A4-A4-A4-A4-G4-F4=G4=G4._E4B4-C5C5-C5-E4-R-E4-B4-B4C5-B4-G4.R-C4=G4=A4-A4-A4-A4-A4-G4-F4=G4=G4._";
+  musicStr.value =
+    "C4-D4-E4-G4G4-R-E4-G4-E4-A4-G4-E4-G4.R-E4=G4=A4-A4-A4-A4-A4-G4-F4=G4=G4._E4B4-C5C5-C5-E4-R-E4-B4-B4C5-B4-G4.R-C4=G4=A4-A4-A4-A4-A4-G4-F4=G4=G4._";
 }
 
 function playInputArea() {
-  this.playMusic();
+  playMusic();
 }
 
 /* 设置 */
@@ -253,34 +272,34 @@ function onNameTypeSet(type) {
   nameType.value = type;
 }
 
-
 /*  键盘演奏逻辑 */
 let pressKeys = new Map();
 document.addEventListener("keydown", (event) => {
   //console.log(event);
   if (pressKeys.has(event.code)) return;
-  pressKeys.set(event.code)
-  let key = keyboard.filter(i => i.keyMap === event.code)?.[0];
-  key ? playKey(key.pitchName) : null;
-})
+  pressKeys.set(event.code);
+  let key = keyboard.filter((i) => i.keyMap === event.code)?.[0];
+  key ? playKey(key.pitchName, undefined, undefined, undefined, false, true) : null;
+});
 document.addEventListener("keyup", (event) => {
-  pressKeys.delete(event.code)
-})
+  pressKeys.delete(event.code);
+  let key = keyboard.filter((i) => i.keyMap === event.code)?.[0];
+  key ? document.getElementById(key.pitchName).classList.remove("key-active") : null;
+});
 
 /* 鼠标演奏逻辑 */
 let isPlay = false;
 document.addEventListener("mousedown", () => {
   isPlay = true;
-})
+});
 document.addEventListener("mouseover", (event) => {
-  if (isPlay && ['white-key', 'black-key'].includes(event.target.className)) {
+  if (isPlay && ["white-key", "black-key"].includes(event.target.className)) {
     playKey(event.target.innerHTML);
   }
-})
+});
 document.addEventListener("mouseup", () => {
   isPlay = false;
-})
-
+});
 </script>
 
 <style lang="scss">
@@ -289,9 +308,8 @@ document.addEventListener("mouseup", () => {
   padding: 0;
 }
 #App {
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+  width: 100%;
+  min-height: 100vh;
   background-color: cadetblue;
 }
 .container {
@@ -343,7 +361,7 @@ document.addEventListener("mouseup", () => {
     font-size: 8px;
     transition: all 0.2s ease-out;
     &:hover {
-      background-color: #747474;
+      background-color: #a8a8a8;
       box-shadow: 2px 2px 0px 0px #747474;
     }
   }
@@ -367,7 +385,7 @@ document.addEventListener("mouseup", () => {
     box-shadow: 2px 2px 0px 0px #000;
   }
   .key-active {
-    background-color: #575757;
+    background: linear-gradient(0deg, #6c6c6c, #ffffff);
     box-shadow: 2px 2px 0px 0px #575757;
   }
 }

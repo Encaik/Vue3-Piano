@@ -3,12 +3,13 @@
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --base=/Vue3-Piano/",
+    "build": "vite build",
     "serve": "vite preview"
   },
   "dependencies": {
+    "element-plus": "^2.1.7",
     "tone": "^14.7.77",
-    "vue": "^3.0.5"
+    "vue": "^3.2.31"
   },
   "devDependencies": {
     "@vitejs/plugin-legacy": "^1.4.0",
