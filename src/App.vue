@@ -1,57 +1,51 @@
 <template>
   <div id="App">
     <div class="container">
-      <div class="title">ENCAIK PIANO</div>
-      <div class="setting">
-        <div class="setting-btn-group">
-          <el-button type="primary" @click="onNameTypeSet(0)">键名</el-button>
-          <el-button type="primary" @click="onNameTypeSet(1)">音名</el-button>
+      <div class="piano-panel">
+        <div class="title">ENCAIK PIANO</div>
+        <div class="setting">
+          <div class="setting-btn-group">
+            <el-switch v-model="keyNameType" active-text="音名" inactive-text="键名" />
+          </div>
+        </div>
+        <div class="keyboard">
+          <div
+            :class="key.keyType ? 'black-key' : 'white-key'"
+            v-for="key in keyboard"
+            :key="key.pitchName"
+            :id="key.pitchName"
+            @mousedown="
+              onNotePlay({ pitch: key.pitchName, playTime: 0.25 }, NotePlayType.mouse)
+            "
+          >
+            {{ keyNameType ? key.pitchName : key.keyName }}
+          </div>
         </div>
       </div>
-      <div class="keyboard">
-        <div
-          :class="key.keyType ? 'black-key' : 'white-key'"
-          v-for="key in keyboard.slice(0, keyboard.length / 2)"
-          :key="key.pitchName"
-          :id="key.pitchName"
-          @mousedown="
-            onNotePlay({ pitch: key.pitchName, playTime: 0.25 }, NotePlayType.mouse)
-          "
-        >
-          {{ nameType ? key.pitchName : key.keyName }}
+      <el-card class="music-panel">
+        <div class="option-bar">
+          <div class="text-input">
+            <span>C4中央Do</span>
+            <span>R四分休止符</span>
+            <span>_（下划线）四分延音符</span>
+            <span>-（减号）八分音符</span>
+            <span>=（等号）十六分音符</span>
+            <span>.（英文句号）附点音符</span>
+          </div>
+          <div>
+            <el-button type="primary" @click="onResetBtnClick()">重置</el-button>
+            <el-button type="primary" @click="onPlayBtnClick()">播放</el-button>
+          </div>
         </div>
-      </div>
-      <div class="keyboard">
-        <div
-          :class="key.keyType ? 'black-key' : 'white-key'"
-          v-for="key in keyboard.slice(keyboard.length / 2)"
-          :key="key.pitchName"
-          :id="key.pitchName"
-          @mousedown="
-            onNotePlay({ pitch: key.pitchName, playTime: 0.25 }, NotePlayType.mouse)
-          "
-        >
-          {{ nameType ? key.pitchName : key.keyName }}
+        <div class="music-input">
+          <el-input
+            v-model="txtMusic"
+            :rows="6"
+            type="textarea"
+            placeholder="请输入乐谱"
+          />
         </div>
-      </div>
-      <el-divider />
-      <div class="text-input">
-        <span>C4中央Do</span>
-        <span>R四分休止符</span>
-        <span>_（下划线）四分延音符</span>
-        <span>-（减号）八分音符</span>
-        <span>=（等号）十六分音符</span>
-        <span>.（英文句号）附点音符</span>
-      </div>
-      <div class="music-input">
-        <el-input v-model="txtMusic" :rows="4" type="textarea" placeholder="请输入乐谱" />
-      </div>
-      <div class="setting">
-        <div class="setting-btn-group">
-          <el-button type="primary" @click="onResetBtnClick()">重置</el-button>
-          <el-button type="primary" @click="onPlayBtnClick()">播放</el-button>
-        </div>
-      </div>
+      </el-card>
     </div>
   </div>
 </template>
@@ -167,6 +161,10 @@ const defaultTxtMusic =
 
 let noteDuration = ""; // 单个音符时长
 
+/* 设置 */
+// 名称显示
+let keyNameType = ref(true);
+
 const NotePlayType = {
   auto: 1,
   mouse: 2,
@@ -183,6 +181,7 @@ function init() {
   noteDuration = 0.5;
   sampler = sampleInit();
   onMouseListener();
+  onKeyboardListener();
 }
 
 /**
@@ -271,10 +270,7 @@ function onNotePlayByAuto(note) {
  * 鼠标触发单音演奏
  */
 function onNotePlayByMouse(note) {
-  sampler.triggerAttackRelease(
-    note.pitch,
-    `${(note.playTime / 0.25) * 2}n`
-  );
+  sampler.triggerAttackRelease(note.pitch, `${(note.playTime / 0.25) * 2}n`);
   let $el = document.getElementById(note.pitch);
   $el.classList.add("key-active");
   $el.addEventListener("mouseup", removeKeyActiveClass);
@@ -289,7 +285,11 @@ function onNotePlayByMouse(note) {
 /**
  * 键盘触发单音演奏
  */
-function onNotePlayByKeyboard() {}
+function onNotePlayByKeyboard(note) {
+  sampler.triggerAttackRelease(note.pitch, `${(note.playTime / 0.25) * 2}n`);
+  let $el = document.getElementById(note.pitch);
+  $el.classList.add("key-active");
+}
 
 /**
  * 鼠标滑动演奏监听
@@ -309,6 +309,28 @@ function onMouseListener() {
       } catch (error) {
         console.log(error);
       }
+    }
+  });
+}
+
+/**
+ * 键盘演奏监听
+ */
+function onKeyboardListener() {
+  let pressKeys = new Map();
+  document.addEventListener("keydown", (event) => {
+    if (pressKeys.has(event.code)) return;
+    pressKeys.set(event.code);
+    const key = keyboard.filter((i) => i.keyMap === event.code)?.[0];
+    if (key) {
+      onNotePlay({ pitch: key.pitchName, playTime: 0.25 }, NotePlayType.keyboard);
+    }
+  });
+  document.addEventListener("keyup", (event) => {
+    pressKeys.delete(event.code);
+    const key = keyboard.filter((i) => i.keyMap === event.code)?.[0];
+    if (key) {
+      document.getElementById(key.pitchName).classList.remove("key-active");
     }
   });
 }
@@ -364,54 +386,6 @@ function buildNoteListByTxtMusic(txtMusic) {
   }
   return nodeList;
 }
-
-//单音演奏方法
-function playKey(
-  pitchName,
-  noteDuration = 8,
-  now,
-  time,
-  isAuto = false,
-  isKeyboard = false
-) {
-  sampler.triggerAttackRelease(pitchName, noteDuration + "n", now);
-  let $el = document.getElementById(pitchName);
-  if (isAuto) {
-    setTimeout(() => {
-      $el.classList.add("key-active");
-      setTimeout(() => {
-        $el.classList.remove("key-active");
-      }, 100);
-    }, time * 1000);
-  } else {
-    if (isKeyboard) {
-      $el.classList.add("key-active");
-    }
-  }
-}
-
-/* 设置 */
-// 名称显示
-let nameType = ref(1);
-
-function onNameTypeSet(type) {
-  nameType.value = type;
-}
-
-/*  键盘演奏逻辑 */
-let pressKeys = new Map();
-document.addEventListener("keydown", (event) => {
-  //console.log(event);
-  if (pressKeys.has(event.code)) return;
-  pressKeys.set(event.code);
-  let key = keyboard.filter((i) => i.keyMap === event.code)?.[0];
-  key ? playKey(key.pitchName, undefined, undefined, undefined, false, true) : null;
-});
-document.addEventListener("keyup", (event) => {
-  pressKeys.delete(event.code);
-  let key = keyboard.filter((i) => i.keyMap === event.code)?.[0];
-  key ? document.getElementById(key.pitchName).classList.remove("key-active") : null;
-});
 </script>
 
 <style lang="scss">
@@ -422,46 +396,50 @@ document.addEventListener("keyup", (event) => {
 #App {
   width: 100%;
   min-height: 100vh;
-  background-color: cadetblue;
+  background: #4eb5ff;
 }
 .container {
   padding: 25px;
-}
-.title {
-  text-align: center;
-  font-size: 40px;
-  color: #2e2e2e;
-  filter: drop-shadow(4px 4px 4px #2e2e2e);
-  margin-bottom: 25px;
-}
-.setting {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  .setting-btn-group {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    .setting-btn {
-      background-color: #4285f4;
-      color: #fff;
-      width: 120px;
-      height: 32px;
-      line-height: 32px;
-      border-radius: 2px;
-      font-size: 0.9em;
-      text-align: center;
-      cursor: pointer;
-      &:hover {
-        background-color: #1f50a0;
+  .piano-panel {
+    border-radius: 15px;
+    background: #222222;
+    box-shadow: inset 0px 0px 9px 7px #8f8f8f;
+    .title {
+      font-size: 30px;
+      color: #d1d0d0;
+      padding: 20px 25px;
+    }
+    .setting {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      .el-switch__label:not(.is-active) {
+        color: #fff;
       }
+    }
+  }
+  .music-panel{
+    margin-top: 30px;
+    .option-bar{
+      display: flex;
+      justify-content: space-between;
+      .text-input {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-bottom: 20px;
+        font-size: 20px;
+      }
+    }
+    .music-input {
+      display: flex;
+      justify-content: center;
     }
   }
 }
 .keyboard {
   display: flex;
   justify-content: center;
-  flex-wrap: wrap;
   padding: 25px;
   @mixin key {
     border-radius: 0 0 5px 5px;
@@ -470,47 +448,36 @@ document.addEventListener("keyup", (event) => {
     align-items: flex-end;
     user-select: none;
     cursor: pointer;
-    font-size: 8px;
-    transition: all 0.2s ease-out;
-    &:hover {
-      background-color: #a8a8a8;
-      box-shadow: 2px 2px 0px 0px #747474;
-    }
+    font-size: 10px;
   }
   .white-key {
     @include key;
-    width: 50px;
+    flex: 1 1;
     height: 200px;
-    background-color: #fff;
-    border: 2px solid gray;
-    box-shadow: 2px 2px 0px 0px #fff;
+    background: #fff;
+    box-shadow: inset 0px 0px 0px 1px #979797;
+    &.key-active {
+      background: linear-gradient(0deg, #6c6c6c, #fff);
+    }
+    &:hover {
+      background: #b7b7b7;
+    }
   }
   .black-key {
     @include key;
-    width: 32px;
+    flex: 1 1;
     height: 125px;
-    background-color: #000;
-    border: 2px solid gray;
+    background: #000;
     margin: 0 -18px;
     z-index: 10;
     color: #fff;
-    box-shadow: 2px 2px 0px 0px #000;
+    box-shadow: inset 0px 0px 0px 1px #979797;
+    &.key-active {
+      background: linear-gradient(0deg, #6c6c6c, #000);
+    }
+    &:hover {
+      background: #666;
+    }
   }
-  .key-active {
-    background: linear-gradient(0deg, #6c6c6c, #ffffff);
-    box-shadow: 2px 2px 0px 0px #575757;
-  }
-}
-.text-input {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin: 25px 0;
-  color: #fff;
-  font-size: 20px;
-}
-.music-input {
-  display: flex;
-  justify-content: center;
 }
 </style>
