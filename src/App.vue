@@ -25,12 +25,14 @@
       <el-card class="music-panel">
         <div class="option-bar">
           <div class="text-input">
-            <span>C4中央Do</span>
-            <span>R四分休止符</span>
-            <span>_（下划线）四分延音符</span>
-            <span>-（减号）八分音符</span>
-            <span>=（等号）十六分音符</span>
-            <span>.（英文句号）附点音符</span>
+            <span>C3中央Do</span>
+            <span>C四分音符</span>
+            <span>C/2八分音符</span>
+            <span>C/4十六分音符</span>
+            <span>C2二分音符</span>
+            <span>C4全音符</span>
+            <span>C'升八度</span>
+            <span>C,降八度</span>
           </div>
           <div>
             <el-button type="primary" @click="onResetBtnClick()">重置</el-button>
@@ -54,6 +56,7 @@
 import { ref } from "vue";
 import * as Tone from "tone";
 import { ElMessage } from "element-plus";
+import { parseMusic } from 'music-score-transition';
 
 let sampler; // 采样器对象
 //键盘渲染对象
@@ -157,7 +160,7 @@ let keyboard = [
  */
 let txtMusic = ref("");
 const defaultTxtMusic =
-  "C4-D4-E4-G4G4-R-E4-G4-E4-A4-G4-E4-G4.R-E4=G4=A4-A4-A4-A4-A4-G4-F4=G4=G4._E4B4-C5C5-C5-E4-R-E4-B4-B4C5-B4-G4.R-C4=G4=A4-A4-A4-A4-A4-G4-F4=G4=G4._";
+  "C D E G2 G2 E G E A G E G3 E/2 G/2 A A A A A G F G";
 
 let noteDuration = ""; // 单个音符时长
 
@@ -304,11 +307,7 @@ function onMouseListener() {
   });
   document.addEventListener("mouseover", (e) => {
     if (isMouseDown && ["white-key", "black-key"].includes(e.target.className)) {
-      try {
-        onNotePlay({ pitch: e.target.innerText, playTime: 0.25 }, NotePlayType.mouse);
-      } catch (error) {
-        console.log(error);
-      }
+      onNotePlay({ pitch: e.target.innerText, playTime: 0.25 }, NotePlayType.mouse);
     }
   });
 }
@@ -339,7 +338,7 @@ function onKeyboardListener() {
  * 文本乐谱演奏
  */
 function onTxtMusicPlay() {
-  let noteList = buildNoteListByTxtMusic(txtMusic); // 音符列表
+  let noteList = parseMusic(txtMusic.value); // 音符列表
   let contextTime = Tone.immediate(); // 音符演奏时机（上下文）
   let realTime = 0; // 音符实际时间
   noteList.forEach((note) => {
@@ -356,35 +355,6 @@ function onTxtMusicPlay() {
     contextTime += note.playTime;
     realTime += note.playTime;
   });
-}
-
-/**
- * 文本乐谱生成单音列表
- */
-function buildNoteListByTxtMusic(txtMusic) {
-  let nodeList = [];
-  let txtNodeList = txtMusic.value.match(/[a-zA-Z]+[0-9]?(-|=)?\.?/g) || [];
-  for (let item of txtNodeList) {
-    let playTime = 0;
-    let timeArr = item.match(/(-|=|\.)/g) || [];
-    if (timeArr.includes("-")) {
-      playTime += noteDuration / 2;
-    } else if (timeArr.includes("=")) {
-      playTime += noteDuration / 4;
-    } else if (timeArr.includes("_")) {
-      playTime += noteDuration;
-    } else {
-      playTime += noteDuration;
-    }
-    if (timeArr.includes(".")) {
-      playTime += playTime / 2;
-    }
-    nodeList.push({
-      pitch: item.match(/[a-zA-Z]+[0-9]?/)[0],
-      playTime,
-    });
-  }
-  return nodeList;
 }
 </script>
 
