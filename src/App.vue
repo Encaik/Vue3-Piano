@@ -4,9 +4,17 @@
       <div class="piano-panel">
         <div class="title">ENCAIK PIANO</div>
         <div class="setting">
-          <div class="setting-btn-group">
-            <el-switch v-model="keyNameType" active-text="音名" inactive-text="键名" />
-          </div>
+          <el-switch v-model="keyNameType" active-text="音名" inactive-text="键名" />
+          <el-divider direction="vertical" />
+          <span>乐器类型：</span>
+          <el-select v-model="instrumentType" @change="onInstrumentTypeChange($event)">
+            <el-option
+              v-for="item in instrumentOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
         </div>
         <div class="keyboard">
           <div
@@ -53,10 +61,10 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, toRef } from "vue";
 import * as Tone from "tone";
 import { ElMessage } from "element-plus";
-import { parseMusic } from 'music-score-transition';
+import { parseMusic } from "music-score-transition";
 
 let sampler; // 采样器对象
 //键盘渲染对象
@@ -151,6 +159,103 @@ let keyboard = [
   { keyName: "", pitchName: "C8", keyType: 0, keyMap: "" },
 ];
 
+let instrumentType = ref("piano");
+let instrumentOptions = [
+  {
+    value: "bass-electric",
+    label: "电贝司",
+  },
+  {
+    value: "guitar-acoustic",
+    label: "吉他",
+  },
+  {
+    value: "guitar-electric",
+    label: "电吉他",
+  },
+  {
+    value: "harp",
+    label: "竖琴",
+  },
+  {
+    value: "organ",
+    label: "管风琴",
+  },
+  {
+    value: "piano",
+    label: "钢琴",
+  },
+];
+let instrumentUrlList = {
+  "bass-electric": {
+    E2: "E2.mp3",
+    G2: "G2.mp3",
+    E3: "E3.mp3",
+    G3: "G3.mp3",
+    E4: "E4.mp3",
+    G4: "G4.mp3",
+    E5: "E5.mp3",
+    G5: "G5.mp3"
+  },
+  "guitar-acoustic": {
+    A1: "A1.mp3",
+    B1: "B1.mp3",
+    C2: "C2.mp3",
+    A2: "A2.mp3",
+    B2: "B2.mp3",
+    C3: "C3.mp3",
+    A3: "A3.mp3",
+    B3: "B3.mp3",
+    C4: "C4.mp3"
+  },
+  "guitar-electric": {
+    A2: "A2.mp3",
+    C3: "C3.mp3",
+    A3: "A3.mp3",
+    C4: "C4.mp3",
+    C5: "C5.mp3",
+    A5: "A5.mp3",
+    C6: "C6.mp3",
+  },
+  harp: {
+    G1: "G1.mp3",
+    A2: "A2.mp3",
+    C3: "C3.mp3",
+    G3: "G3.mp3",
+    A4: "A4.mp3",
+    C5: "C5.mp3",
+    G5: "G5.mp3",
+    A6: "A6.mp3",
+  },
+  organ: {
+    C1: "C1.mp3",
+    A1: "A1.mp3",
+    C2: "C2.mp3",
+    A2: "A2.mp3",
+    C3: "C3.mp3",
+    A3: "A3.mp3",
+    C4: "C4.mp3",
+    C5: "C5.mp3",
+    A5: "A5.mp3",
+    C6: "C6.mp3",
+  },
+  piano: {
+    A0: "A0.mp3",
+    C1: "C1.mp3",
+    A1: "A1.mp3",
+    C2: "C2.mp3",
+    A2: "A2.mp3",
+    C3: "C3.mp3",
+    A3: "A3.mp3",
+    C4: "C4.mp3",
+    C5: "C5.mp3",
+    A5: "A5.mp3",
+    C6: "C6.mp3",
+    A6: "A6.mp3",
+    C7: "C7.mp3"
+  },
+};
+
 //歌谱字符串
 /**
  * -八分音符
@@ -159,8 +264,7 @@ let keyboard = [
  * .附点音符
  */
 let txtMusic = ref("");
-const defaultTxtMusic =
-  "C D E G2 G2 E G E A G E G3 E/2 G/2 A A A A A G F G";
+const defaultTxtMusic = "C D E G2 G2 E G E A G E G3 E/2 G/2 A A A A A G F G";
 
 let noteDuration = ""; // 单个音符时长
 
@@ -182,7 +286,7 @@ init();
 function init() {
   txtMusic.value = defaultTxtMusic;
   noteDuration = 0.5;
-  sampler = sampleInit();
+  sampler = sampleInit(instrumentType.value);
   onMouseListener();
   onKeyboardListener();
 }
@@ -190,25 +294,11 @@ function init() {
 /**
  * 采样器初始化
  */
-function sampleInit() {
+function sampleInit(instrumentType) {
   const sampler = new Tone.Sampler({
-    urls: {
-      A0: "A0.mp3",
-      C1: "C1.mp3",
-      A1: "A1.mp3",
-      C2: "C2.mp3",
-      A2: "A2.mp3",
-      C3: "C3.mp3",
-      A3: "A3.mp3",
-      C4: "C4.mp3",
-      C5: "C5.mp3",
-      A5: "A5.mp3",
-      C6: "C6.mp3",
-      A6: "A6.mp3",
-      C7: "C7.mp3",
-    },
+    urls: instrumentUrlList[instrumentType],
     release: 1,
-    baseUrl: "./samples/piano/",
+    baseUrl: `./samples/${instrumentType}/`,
   }).toDestination();
   //采样器加载完成后演奏乐谱
   Tone.loaded().then(() => {
@@ -356,6 +446,10 @@ function onTxtMusicPlay() {
     realTime += note.playTime;
   });
 }
+
+function onInstrumentTypeChange(instrumentType) {
+  sampler = sampleInit(instrumentType);
+}
 </script>
 
 <style lang="scss">
@@ -383,14 +477,15 @@ function onTxtMusicPlay() {
       display: flex;
       justify-content: center;
       align-items: center;
+      color: #fff;
       .el-switch__label:not(.is-active) {
         color: #fff;
       }
     }
   }
-  .music-panel{
+  .music-panel {
     margin-top: 30px;
-    .option-bar{
+    .option-bar {
       display: flex;
       justify-content: space-between;
       .text-input {
