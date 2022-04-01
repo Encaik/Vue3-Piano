@@ -23,7 +23,7 @@
             :key="key.pitchName"
             :id="key.pitchName"
             @mousedown="
-              onNotePlay({ pitch: key.pitchName, playTime: 0.25 }, NotePlayType.mouse)
+              onNotePlay({ pitch: key.pitchName, playTime: noteDuration }, NotePlayType.mouse)
             "
           >
             {{ keyNameType ? key.pitchName : key.keyName }}
@@ -43,6 +43,7 @@
             <span>C,降八度</span>
           </div>
           <div>
+            <el-button type="primary" @click="onSubmitBtnClick()">提交</el-button>
             <el-button type="primary" @click="onResetBtnClick()">重置</el-button>
             <el-button type="primary" @click="onPlayBtnClick()">播放</el-button>
           </div>
@@ -56,15 +57,51 @@
           />
         </div>
       </el-card>
+      <el-card class="score-panel">
+        <div v-for="music in musicScoreList.data" :key="music.id">
+          <el-button type="success" plain @click="onMusicScoreClick(music)">{{music.musicname}}</el-button>
+        </div>
+      </el-card>
     </div>
+    <el-dialog v-model="scoreSubmitVisible" title="提交曲谱">
+      <el-form :model="form">
+        <el-form-item label="歌曲名称">
+          <el-input v-model="form.musicname" />
+        </el-form-item>
+        <el-form-item label="曲谱内容">
+          <el-input
+            v-model="form.musicscore"
+            :rows="6"
+            type="textarea"
+            placeholder="请输入乐谱"
+          />
+        </el-form-item>
+        <el-form-item label="歌曲作者">
+          <el-input v-model="form.musicauthor" />
+        </el-form-item>
+        <el-form-item label="曲谱作者">
+          <el-input v-model="form.scoreauthor" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="dialogFormVisible = false">取消</el-button>
+          <el-button type="primary" @click="onSubmitScoreOk()">
+            确认
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref,reactive,getCurrentInstance } from "vue";
 import * as Tone from "tone";
 import { ElMessage } from "element-plus";
 import { parseMusic } from "music-score-transition";
+
+let { proxy } = getCurrentInstance();
 
 let sampler; // 采样器对象
 //键盘渲染对象
@@ -185,7 +222,7 @@ let instrumentUrlList = {
     C3: "C3.mp3",
     A4: "A4.mp3",
     C4: "C4.mp3",
-    A4: "A4.mp3",
+    A5: "A5.mp3",
     C5: "C5.mp3"
   },
   "clarinet": {
@@ -235,7 +272,7 @@ let instrumentUrlList = {
     C6: "C6.mp3",
   },
   "guitar-nylon": {
-    E3: "E3.mp3",
+    E2: "E2.mp3",
     A2: "A2.mp3",
     E3: "E3.mp3",
     A3: "A3.mp3",
@@ -293,7 +330,7 @@ let instrumentUrlList = {
     C3: "C3.mp3",
     A4: "A4.mp3",
     C4: "C4.mp3",
-    A4: "A4.mp3",
+    A5: "A5.mp3",
   },
   trombone: {
     C2: "C2.mp3",
@@ -335,9 +372,16 @@ let instrumentUrlList = {
  * .附点音符
  */
 let txtMusic = ref("");
-const defaultTxtMusic = "C D E G2 G2 E G E A G E G3 E/2 G/2 A A A A A G F G";
+let musicScoreList = reactive({data:[]});
 
-let noteDuration = ""; // 单个音符时长
+/**
+ * 点击歌曲按钮加载曲谱
+ */
+function onMusicScoreClick(music) {
+  txtMusic.value = music.musicscore;
+}
+
+let noteDuration = 0.25; // 单个音符时长
 
 const NotePlayType = {
   auto: 1,
@@ -349,11 +393,19 @@ const NotePlayType = {
  * 初始化
  */
 function init() {
-  txtMusic.value = defaultTxtMusic;
-  noteDuration = 0.5;
+  getMusicList();
   sampler = sampleInit(instrumentType.value);
   onMouseListener();
   onKeyboardListener();
+}
+
+/**
+ * 歌曲列表
+ */
+function getMusicList() {
+  proxy.$http.get("").then(res=>{
+    musicScoreList.data=res;
+  });
 }
 
 /**
@@ -365,7 +417,7 @@ function sampleInit(instrumentType) {
     release: 1,
     baseUrl: `./samples/${instrumentType}/`,
   }).toDestination();
-  //采样器加载完成后演奏乐谱
+    //采样器加载完成后演奏乐谱
   Tone.loaded().then(() => {
     ElMessage({
       message: "资源加载完成",
@@ -373,6 +425,34 @@ function sampleInit(instrumentType) {
     });
   });
   return sampler;
+}
+
+/**
+ * 提交曲谱到服务器
+ */
+
+let scoreSubmitVisible = ref(false);
+const form = reactive({
+  musicname:"",
+  musicscore:"",
+  musicauthor:"",
+  scoreauthor:""
+});
+
+function onSubmitBtnClick() {
+  form.musicscore = txtMusic.value;
+  scoreSubmitVisible.value = true;
+}
+
+function onSubmitScoreOk() {
+  proxy.$http.post("add",form).then(()=>{
+    getMusicList();
+    scoreSubmitVisible.value = false;
+    form.musicname = "";
+    form.musicscore = "";
+    form.musicauthor = "";
+    form.scoreauthor = "";
+  });
 }
 
 /**
@@ -386,7 +466,7 @@ function onPlayBtnClick() {
  * 重置文本曲谱
  */
 function onResetBtnClick() {
-  txtMusic.value = defaultTxtMusic;
+  txtMusic.value = "";
 }
 
 /**
@@ -394,15 +474,15 @@ function onResetBtnClick() {
  */
 function onNotePlay(note, notePlayType) {
   switch (notePlayType) {
-    case NotePlayType.auto:
-      onNotePlayByAuto(note);
-      break;
-    case NotePlayType.mouse:
-      onNotePlayByMouse(note);
-      break;
-    case NotePlayType.keyboard:
-      onNotePlayByKeyboard(note);
-      break;
+  case NotePlayType.auto:
+    onNotePlayByAuto(note);
+    break;
+  case NotePlayType.mouse:
+    onNotePlayByMouse(note);
+    break;
+  case NotePlayType.keyboard:
+    onNotePlayByKeyboard(note);
+    break;
   }
 }
 
@@ -412,7 +492,7 @@ function onNotePlay(note, notePlayType) {
 function onNotePlayByAuto(note) {
   sampler.triggerAttackRelease(
     note.pitch,
-    `${(note.playTime / 0.25) * 2}n`,
+    `${(note.playTime / noteDuration) * 2}n`,
     note.contextTime
   );
   let $el = document.getElementById(note.pitch);
@@ -428,7 +508,7 @@ function onNotePlayByAuto(note) {
  * 鼠标触发单音演奏
  */
 function onNotePlayByMouse(note) {
-  sampler.triggerAttackRelease(note.pitch, `${(note.playTime / 0.25) * 2}n`);
+  sampler.triggerAttackRelease(note.pitch, `${(note.playTime / noteDuration) * 2}n`);
   let $el = document.getElementById(note.pitch);
   $el.classList.add("key-active");
   $el.addEventListener("mouseup", removeKeyActiveClass);
@@ -444,7 +524,7 @@ function onNotePlayByMouse(note) {
  * 键盘触发单音演奏
  */
 function onNotePlayByKeyboard(note) {
-  sampler.triggerAttackRelease(note.pitch, `${(note.playTime / 0.25) * 2}n`);
+  sampler.triggerAttackRelease(note.pitch, `${(note.playTime / noteDuration) * 2}n`);
   let $el = document.getElementById(note.pitch);
   $el.classList.add("key-active");
 }
@@ -454,7 +534,7 @@ function onNotePlayByKeyboard(note) {
  */
 function onMouseListener() {
   let isMouseDown = false;
-  document.addEventListener("mousedown", (e) => {
+  document.addEventListener("mousedown", () => {
     isMouseDown = true;
   });
   document.addEventListener("mouseup", () => {
@@ -462,7 +542,7 @@ function onMouseListener() {
   });
   document.addEventListener("mouseover", (e) => {
     if (isMouseDown && ["white-key", "black-key"].includes(e.target.className)) {
-      onNotePlay({ pitch: e.target.innerText, playTime: 0.25 }, NotePlayType.mouse);
+      onNotePlay({ pitch: e.target.innerText, playTime: noteDuration }, NotePlayType.mouse);
     }
   });
 }
@@ -477,7 +557,7 @@ function onKeyboardListener() {
     pressKeys.set(event.code);
     const key = keyboard.filter((i) => i.keyMap === event.code)?.[0];
     if (key) {
-      onNotePlay({ pitch: key.pitchName, playTime: 0.25 }, NotePlayType.keyboard);
+      onNotePlay({ pitch: key.pitchName, playTime: noteDuration }, NotePlayType.keyboard);
     }
   });
   document.addEventListener("keyup", (event) => {
@@ -659,6 +739,13 @@ init();
     .music-input {
       display: flex;
       justify-content: center;
+    }
+  }
+  .score-panel{
+    margin-top: 30px;
+    .el-card__body{
+      display: flex;
+      gap:8px;
     }
   }
 }

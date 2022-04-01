@@ -1,6 +1,9 @@
-import { createApp } from 'vue'
-import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
-import App from './App.vue'
+import { createApp } from "vue";
+import ElementPlus from "element-plus";
+import "element-plus/dist/index.css";
+import http from "./util/http";
+import App from "./App.vue";
 
-createApp(App).use(ElementPlus).mount('#app')
+const app = createApp(App);
+app.config.globalProperties.$http = http;
+app.use(ElementPlus).mount("#app");
