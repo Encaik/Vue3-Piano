@@ -41,6 +41,9 @@
             <span>C4全音符</span>
             <span>C'升八度</span>
             <span>C,降八度</span>
+            <span>_C降半音</span>
+            <span>^C升半音</span>
+            <span>=C还原</span>
           </div>
           <div>
             <el-button type="primary" @click="onSubmitBtnClick()">提交</el-button>

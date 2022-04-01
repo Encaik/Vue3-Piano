@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const config = {
-  baseURL: "http://124.222.1.235:3000/piano/",
-  timeout: 1000,
+  baseURL: "http://124.222.1.235:3000/piano",
+  timeout: 10000,
 };
 
 const http = axios.create(config);
@@ -27,14 +27,10 @@ http.post = function(url,data){
   });
 };
 
-// http response 拦截器
 http.interceptors.response.use(
   response => {
     return response.data;
-  },
-  //接口错误状态处理，也就是说无响应时的处理
-  error => {
-    return Promise.reject(error.response); // 返回接口返回的错误信息
-  });
+  }
+);
 
 export default http;
