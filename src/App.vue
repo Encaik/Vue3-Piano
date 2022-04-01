@@ -61,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref, toRef } from "vue";
+import { ref } from "vue";
 import * as Tone from "tone";
 import { ElMessage } from "element-plus";
 import { parseMusic } from "music-score-transition";
@@ -159,33 +159,6 @@ let keyboard = [
   { keyName: "", pitchName: "C8", keyType: 0, keyMap: "" },
 ];
 
-let instrumentType = ref("piano");
-let instrumentOptions = [
-  {
-    value: "bass-electric",
-    label: "电贝司",
-  },
-  {
-    value: "guitar-acoustic",
-    label: "吉他",
-  },
-  {
-    value: "guitar-electric",
-    label: "电吉他",
-  },
-  {
-    value: "harp",
-    label: "竖琴",
-  },
-  {
-    value: "organ",
-    label: "管风琴",
-  },
-  {
-    value: "piano",
-    label: "钢琴",
-  },
-];
 let instrumentUrlList = {
   "bass-electric": {
     E2: "E2.mp3",
@@ -196,6 +169,50 @@ let instrumentUrlList = {
     G4: "G4.mp3",
     E5: "E5.mp3",
     G5: "G5.mp3"
+  },
+  "bassoon": {
+    A1: "A1.mp3",
+    C2: "C2.mp3",
+    A2: "A2.mp3",
+    C3: "C3.mp3",
+    A3: "A3.mp3",
+    C4: "C4.mp3",
+  },
+  "cello": {
+    A2: "A2.mp3",
+    C2: "C2.mp3",
+    A3: "A3.mp3",
+    C3: "C3.mp3",
+    A4: "A4.mp3",
+    C4: "C4.mp3",
+    A4: "A4.mp3",
+    C5: "C5.mp3"
+  },
+  "clarinet": {
+    D2: "D2.mp3",
+    F2: "F2.mp3",
+    D3: "D3.mp3",
+    F3: "F3.mp3",
+    D4: "D4.mp3",
+    F4: "F4.mp3",
+    D5: "D5.mp3",
+  },
+  "contrabass": {
+    A1: "A1.mp3",
+    E2: "E2.mp3",
+  },
+  "flute": {
+    C3: "C3.mp3",
+    A3: "A3.mp3",
+    C4: "C4.mp3",
+    A4: "A4.mp3",
+    C5: "C5.mp3",
+    A5: "A5.mp3",
+    C6: "C6.mp3"
+  },
+  "french-horn": {
+    A0: "A0.mp3",
+    F4: "F4.mp3",
   },
   "guitar-acoustic": {
     A1: "A1.mp3",
@@ -216,6 +233,24 @@ let instrumentUrlList = {
     C5: "C5.mp3",
     A5: "A5.mp3",
     C6: "C6.mp3",
+  },
+  "guitar-nylon": {
+    E3: "E3.mp3",
+    A2: "A2.mp3",
+    E3: "E3.mp3",
+    A3: "A3.mp3",
+    E4: "E4.mp3",
+    A4: "A4.mp3",
+    E5: "E5.mp3",
+    A5: "A5.mp3",
+  },
+  "harmonium": {
+    C2: "C2.mp3",
+    A2: "A2.mp3",
+    C3: "C3.mp3",
+    A3: "A3.mp3",
+    C4: "C4.mp3",
+    C5: "C5.mp3",
   },
   harp: {
     G1: "G1.mp3",
@@ -254,6 +289,42 @@ let instrumentUrlList = {
     A6: "A6.mp3",
     C7: "C7.mp3"
   },
+  saxophone: {
+    C3: "C3.mp3",
+    A4: "A4.mp3",
+    C4: "C4.mp3",
+    A4: "A4.mp3",
+  },
+  trombone: {
+    C2: "C2.mp3",
+    F3: "F3.mp3",
+  },
+  trumpet: {
+    A2: "A2.mp3",
+    C3: "C3.mp3",
+    A4: "A4.mp3",
+    C5: "C5.mp3",
+  },
+  tuba: {
+    D2: "D2.mp3",
+    D3: "D3.mp3",
+  },
+  violin: {
+    A3: "A3.mp3",
+    C4: "C4.mp3",
+    A4: "A4.mp3",
+    C5: "C5.mp3",
+    A5: "A5.mp3",
+    C6: "C6.mp3",
+    A6: "A6.mp3",
+    C7: "C7.mp3",
+  },
+  xylophone: {
+    C4: "C4.mp3",
+    C5: "C5.mp3",
+    C6: "C6.mp3",
+    C7: "C7.mp3",
+  },
 };
 
 //歌谱字符串
@@ -268,17 +339,11 @@ const defaultTxtMusic = "C D E G2 G2 E G E A G E G3 E/2 G/2 A A A A A G F G";
 
 let noteDuration = ""; // 单个音符时长
 
-/* 设置 */
-// 名称显示
-let keyNameType = ref(true);
-
 const NotePlayType = {
   auto: 1,
   mouse: 2,
   keyboard: 3,
 };
-
-init();
 
 /**
  * 初始化
@@ -447,9 +512,104 @@ function onTxtMusicPlay() {
   });
 }
 
+//----------键名显示内容逻辑----------
+
+let keyNameType = ref(true);
+
+//----------乐器类型切换逻辑----------
+
+let instrumentType = ref("piano");
+let instrumentOptions = [
+  {
+    value: "bass-electric",
+    label: "电贝司",
+  },
+  {
+    value: "bassoon",
+    label: "巴松",
+  },
+  {
+    value: "cello",
+    label: "大提琴",
+  },
+  {
+    value: "clarinet",
+    label: "单簧管",
+  },
+  {
+    value: "contrabass",
+    label: "倍低音",
+  },
+  {
+    value: "flute",
+    label: "长笛",
+  },
+  {
+    value: "french-horn",
+    label: "法国号",
+  },
+  {
+    value: "guitar-acoustic",
+    label: "民谣吉他",
+  },
+  {
+    value: "guitar-electric",
+    label: "电吉他",
+  },
+  {
+    value: "guitar-nylon",
+    label: "古典吉他",
+  },
+  {
+    value: "harmonium",
+    label: "小风琴",
+  },
+  {
+    value: "harp",
+    label: "竖琴",
+  },
+  {
+    value: "organ",
+    label: "管风琴",
+  },
+  {
+    value: "piano",
+    label: "钢琴",
+  },
+  {
+    value: "saxophone",
+    label: "萨克斯",
+  },
+  {
+    value: "trombone",
+    label: "长号",
+  },
+  {
+    value: "trumpet",
+    label: "小号",
+  },
+  {
+    value: "tuba",
+    label: "大号",
+  },
+  {
+    value: "violin",
+    label: "小提琴",
+  },
+  {
+    value: "xylophone",
+    label: "木琴",
+  }
+];
+
+/**
+ * 乐器类型切换
+ */
 function onInstrumentTypeChange(instrumentType) {
   sampler = sampleInit(instrumentType);
 }
+
+init();
 </script>
 
 <style lang="scss">
