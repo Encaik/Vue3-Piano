@@ -448,7 +448,7 @@ function onSubmitBtnClick() {
 }
 
 function onSubmitScoreOk() {
-  proxy.$http.post("add",form).then(()=>{
+  proxy.$http.post("/add",form).then(()=>{
     getMusicList();
     scoreSubmitVisible.value = false;
     form.musicname = "";
