@@ -102,7 +102,7 @@
 import { ref,reactive,getCurrentInstance } from "vue";
 import * as Tone from "tone";
 import { ElMessage } from "element-plus";
-import { parseMusic } from "music-score-transition";
+import * as abc from "@encaik/abc";
 
 let { proxy } = getCurrentInstance();
 
@@ -576,22 +576,31 @@ function onKeyboardListener() {
  * 文本乐谱演奏
  */
 function onTxtMusicPlay() {
-  let noteList = parseMusic(txtMusic.value); // 音符列表
+  let playTimeMap = {
+    4:1,
+    3:0.75,
+    2:0.5,
+    1:0.25,
+    "/2":0.125,
+    "/4":0.0625,
+  };
+  let parser = new abc.Parser();
+  let res = parser.parseMusic(txtMusic.value);
+  let noteList = res; // 音符列表
   let contextTime = Tone.immediate(); // 音符演奏时机（上下文）
   let realTime = 0; // 音符实际时间
   noteList.forEach((note) => {
-    if (note.pitch !== "R") {
-      onNotePlay(
-        {
-          ...note,
-          contextTime,
-          realTime,
-        },
-        NotePlayType.auto
-      );
-    }
-    contextTime += note.playTime;
-    realTime += note.playTime;
+    onNotePlay(
+      {
+        pitch:`${note.name}${note.pitch}`,
+        playTime:playTimeMap[note.duration],
+        contextTime,
+        realTime,
+      },
+      NotePlayType.auto
+    );
+    contextTime += playTimeMap[note.duration];
+    realTime += playTimeMap[note.duration];
   });
 }
 

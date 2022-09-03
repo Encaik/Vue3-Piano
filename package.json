@@ -7,9 +7,9 @@
     "serve": "vite preview"
   },
   "dependencies": {
+    "@encaik/abc": "^0.0.6",
     "axios": "^0.26.1",
     "element-plus": "^2.1.7",
-    "music-score-transition": "^0.0.5",
     "tone": "^14.7.77",
     "vue": "^3.2.31"
   },
