@@ -3,6 +3,9 @@
     <div class="container">
       <div class="piano-panel">
         <div class="title">青春献礼二十大，红色追梦信工人</div>
+        <div class="logo">
+          <img src="@/assets/img/danghui.png">
+        </div>
         <div class="setting">
           <el-switch v-model="keyNameType" active-text="音名" inactive-text="键名" />
           <el-divider direction="vertical" />
@@ -726,6 +729,15 @@ init();
       color: #e30000;
       padding: 20px 25px;
       text-align: center;
+    }
+    .logo{
+      position: absolute;
+      top: 50px;
+      right: 50px;
+      img {
+        width: 72px;
+        height: 70px;
+      }
     }
     .setting {
       display: flex;
