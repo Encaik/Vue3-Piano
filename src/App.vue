@@ -2,7 +2,7 @@
   <div id="App">
     <div class="container">
       <div class="piano-panel">
-        <div class="title">ENCAIK PIANO</div>
+        <div class="title">青春献礼二十大，红色追梦信工人</div>
         <div class="setting">
           <el-switch v-model="keyNameType" active-text="音名" inactive-text="键名" />
           <el-divider direction="vertical" />
@@ -33,7 +33,7 @@
       <el-card class="music-panel">
         <div class="option-bar">
           <div class="text-input">
-            <span>C3中央Do</span>
+            <span>C默认为C4</span>
             <span>C四分音符</span>
             <span>C/2八分音符</span>
             <span>C/4十六分音符</span>
@@ -42,8 +42,7 @@
             <span>C'升八度</span>
             <span>C,降八度</span>
             <span>_C降半音</span>
-            <span>^C升半音</span>
-            <span>=C还原</span>
+            <span>整体顺序如下:_C2'</span>
           </div>
           <div>
             <el-button type="primary" @click="onSubmitBtnClick()">提交</el-button>
@@ -54,15 +53,16 @@
         <div class="music-input">
           <el-input
             v-model="txtMusic"
-            :rows="6"
+            :rows="8"
             type="textarea"
             placeholder="请输入乐谱"
+            style="background: rgba(255,255,255,0.5);"
           />
         </div>
       </el-card>
       <el-card class="score-panel">
         <div v-for="music in musicScoreList.data" :key="music.id">
-          <el-button type="success" plain @click="onMusicScoreClick(music)">{{music.musicname}}</el-button>
+          <el-button type="danger" plain @click="onMusicScoreClick(music)">{{music.musicname}}</el-button>
         </div>
       </el-card>
     </div>
@@ -384,7 +384,7 @@ function onMusicScoreClick(music) {
   txtMusic.value = music.musicscore;
 }
 
-let noteDuration = 0.25; // 单个音符时长
+let noteDuration = 1; // 单个音符时长
 
 const NotePlayType = {
   auto: 1,
@@ -495,7 +495,7 @@ function onNotePlay(note, notePlayType) {
 function onNotePlayByAuto(note) {
   sampler.triggerAttackRelease(
     note.pitch,
-    `${(note.playTime / noteDuration) * 2}n`,
+    `${(note.playTime / noteDuration)}n`,
     note.contextTime
   );
   let $el = document.getElementById(note.pitch);
@@ -527,7 +527,7 @@ function onNotePlayByMouse(note) {
  * 键盘触发单音演奏
  */
 function onNotePlayByKeyboard(note) {
-  sampler.triggerAttackRelease(note.pitch, `${(note.playTime / noteDuration) * 2}n`);
+  sampler.triggerAttackRelease(note.pitch, `${(note.playTime / noteDuration)}n`);
   let $el = document.getElementById(note.pitch);
   $el.classList.add("key-active");
 }
@@ -577,12 +577,12 @@ function onKeyboardListener() {
  */
 function onTxtMusicPlay() {
   let playTimeMap = {
-    4:1,
-    3:0.75,
-    2:0.5,
-    1:0.25,
-    "/2":0.125,
-    "/4":0.0625,
+    4:2,
+    3:1.5,
+    2:1,
+    1:0.5,
+    "/2":0.25,
+    "/4":0.125,
   };
   let parser = new abc.Parser();
   let res = parser.parseMusic(txtMusic.value);
@@ -592,7 +592,7 @@ function onTxtMusicPlay() {
   noteList.forEach((note) => {
     onNotePlay(
       {
-        pitch:`${note.name}${note.pitch}`,
+        pitch:`${note.name}${note.flat?"b":""}${note.sharp?"#":""}${note.pitch}`,
         playTime:playTimeMap[note.duration],
         contextTime,
         realTime,
@@ -712,18 +712,20 @@ init();
 #App {
   width: 100%;
   min-height: 100vh;
-  background: #4eb5ff;
+  background-image: url('assets/img/bg.webp');
+  background-size: 100% 100%;
 }
 .container {
   padding: 25px;
   .piano-panel {
     border-radius: 15px;
-    background: #222222;
-    box-shadow: inset 0px 0px 9px 7px #8f8f8f;
+    background-image: linear-gradient( 145deg, #FDD819 10%, #E80505 100%);
+    box-shadow: inset 0px 0px 20px 5px #cbcbcb;
     .title {
       font-size: 30px;
-      color: #d1d0d0;
+      color: #e30000;
       padding: 20px 25px;
+      text-align: center;
     }
     .setting {
       display: flex;

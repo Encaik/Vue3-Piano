@@ -1,0 +1,34 @@
+@forward 'element-plus/theme-chalk/src/common/var.scss' with (
+  $colors: (
+    'primary': (
+      'base': #E80505,
+    ),
+    'success': (
+      'base': #67c23a,
+    ),
+    'warning': (
+      'base': #e6a23c,
+    ),
+    'danger': (
+      'base': #f56c6c,
+    ),
+    'error': (
+      'base': #f56c6c,
+    ),
+    'info': (
+      'base': #909399,
+    ),
+  ),
+);
+
+.el-card {
+  background-image: url('@/assets/img/card-bg.webp');
+  background-size: 100% 100%;
+  background-attachment: fixed;
+  border: unset;
+  border-radius: 15px;
+}
+
+.el-textarea__inner {
+  background-color: rgba(255,255,255,0.4);
+}
