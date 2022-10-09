@@ -1,6 +1,6 @@
 import { createApp } from "vue";
-import ElementPlus from "element-plus";
 import "element-plus/dist/index.css";
+import ElementPlus from "element-plus";
 import http from "./util/http";
 import App from "./App.vue";
 

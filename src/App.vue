@@ -37,11 +37,11 @@
         <div class="option-bar">
           <div class="text-input">
             <span>C默认为C4</span>
-            <span>C四分音符</span>
-            <span>C/2八分音符</span>
-            <span>C/4十六分音符</span>
-            <span>C2二分音符</span>
-            <span>C4全音符</span>
+            <span>C十六分音符</span>
+            <span>C2八分音符</span>
+            <span>C4四分音符</span>
+            <span>C8二分音符</span>
+            <span>C16全音符</span>
             <span>C'升八度</span>
             <span>C,降八度</span>
             <span>_C降半音</span>
@@ -498,7 +498,7 @@ function onNotePlay(note, notePlayType) {
 function onNotePlayByAuto(note) {
   sampler.triggerAttackRelease(
     note.pitch,
-    `${(note.playTime / noteDuration)}n`,
+    `${note.playTime}n`,
     note.contextTime
   );
   let $el = document.getElementById(note.pitch);
@@ -579,14 +579,6 @@ function onKeyboardListener() {
  * 文本乐谱演奏
  */
 function onTxtMusicPlay() {
-  let playTimeMap = {
-    4:2,
-    3:1.5,
-    2:1,
-    1:0.5,
-    "/2":0.25,
-    "/4":0.125,
-  };
   let parser = new abc.Parser();
   let res = parser.parseMusic(txtMusic.value);
   let noteList = res; // 音符列表
@@ -596,14 +588,14 @@ function onTxtMusicPlay() {
     onNotePlay(
       {
         pitch:`${note.name}${note.flat?"b":""}${note.sharp?"#":""}${note.pitch}`,
-        playTime:playTimeMap[note.duration],
+        playTime:note.duration,
         contextTime,
         realTime,
       },
       NotePlayType.auto
     );
-    contextTime += playTimeMap[note.duration];
-    realTime += playTimeMap[note.duration];
+    contextTime += note.duration*0.125;
+    realTime += note.duration*0.125;
   });
 }
 
